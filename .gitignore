@@ -1,0 +1,11 @@
+data/raw/*
+!data/raw/.gitkeep
+data/synthetic/
+results/
+results_synthetic/
+*.joblib
+__pycache__/
+.pytest_cache/
+.venv/
+.env
+*.pyc
