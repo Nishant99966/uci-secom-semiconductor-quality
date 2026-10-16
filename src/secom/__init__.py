@@ -1,1 +1,0 @@
-"""Semiconductor quality classification."""

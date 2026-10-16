@@ -1,11 +1,8 @@
-data/raw/*
-!data/raw/.gitkeep
-data/synthetic/
-results/
-results_synthetic/
-*.joblib
 __pycache__/
+*.py[cod]
 .pytest_cache/
-.venv/
-.env
-*.pyc
+data/*.sqlite
+data/*.sqlite-*
+data/raw/
+data/*.zip
+results/

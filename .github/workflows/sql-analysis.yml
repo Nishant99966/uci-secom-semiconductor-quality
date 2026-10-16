@@ -1,0 +1,43 @@
+name: SQL Manufacturing Quality Analysis
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/sql-analysis.yml'
+      - 'scripts/**'
+      - 'sql/**'
+      - 'tests/**'
+      - 'README.md'
+  workflow_dispatch:
+jobs:
+  sql-quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Run SQL unit tests
+        run: python -m unittest discover -s tests -v
+      - name: Load real UCI SECOM data into SQLite
+        run: python scripts/load_secom.py --database data/secom.sqlite
+      - name: Generate original-data SQL reports
+        run: python scripts/run_analysis.py --database data/secom.sqlite --out results
+      - name: Verify database quality checks
+        run: |
+          python - <<'PY'
+          import sqlite3
+          db = sqlite3.connect("data/secom.sqlite")
+          n, defects = db.execute("SELECT COUNT(*), SUM(is_failed) FROM parts").fetchone()
+          readings = db.execute("SELECT COUNT(*) FROM sensor_readings").fetchone()[0]
+          print("Part count:", n, "Defective:", defects, "Sensor cells:", readings)
+          assert (n, defects, readings) == (1567, 104, 1567 * 590)
+          db.close()
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: real-uci-secom-sql-reports
+          path: results/
+          if-no-files-found: warn

@@ -1,41 +1,59 @@
-# UCI SECOM — Semiconductor Manufacturing Failure Prediction
+# Semiconductor Manufacturing Quality Analysis — SQL
 
-End-to-end, leakage-aware classification of pass/fail outcomes in the [UCI SECOM dataset](https://archive.ics.uci.edu/dataset/179/secom), also published on [Kaggle](https://www.kaggle.com/datasets/paresh2047/uci-semcom/data).
+**SQL portfolio project | SQLite | Real UCI SECOM manufacturing data**
 
-**Status:** Implemented training/evaluation pipeline with synthetic-data tests. No genuine SECOM model score is claimed until the actual dataset is downloaded and training is run.
+Analyze the quality of 1,567 semiconductor manufacturing records and 590 anonymized sensor measurements using **SQL**, not a machine-learning model. Questions answered: How frequently does production fail? Does the failure rate change over time? Which sensors are frequently missing? Which sensor readings differ between failed and passed parts?
 
-## Data
-1,567 manufacturing samples, ~590 sensor measurements, 104 failures (~6.6%). Accuracy alone is misleading for this imbalanced dataset, so the project reports average precision, recall, F1, balanced accuracy, ROC AUC, MCC, and confusion matrices.
+> The earlier machine-learning work is preserved in the [machine-learning branch](../../tree/machine-learning). The \`main\` branch is exclusively for SQL analysis.
 
-## Installation
-```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-pip install -e .
-```
+## Dataset and questions
 
-## Download
-Use `python scripts/download_data.py` or place `secom.data` and `secom_labels.data` from UCI/Kaggle in `data/raw/`.
+Source: [UCI SECOM](https://archive.ics.uci.edu/dataset/179/secom), a public semiconductor manufacturing dataset with sensor columns and pass/fail labels. The loader uses the official [UCI data archive](https://archive.ics.uci.edu/static/public/179/secom.zip); files are **not** stored in Git.
 
-## Train and evaluate
-```bash
-python -m secom.train --data-dir data/raw --output-dir results --split chronological
-```
+- **Data modeling:** \`parts\` (one manufactured part per row) and \`sensor_readings\` (one reading per part and sensor).
+- **Cleaning:** standardize time stamps, convert \`NaN\` to database \`NULL\`, validate row and column counts, enforce valid outcome labels.
+- **SQL skills:** joins, grouping, CTEs, conditional aggregation, window functions, analytic views, and NULL-aware statistics.
+- **Business questions:** defect rate, missing sensor coverage, changes in failure rates over time, and differences in readings between passed and failed parts.
 
-Chronological validation is the default; use `--split stratified` for an alternative split. Model selection is by training-fold average precision; threshold tuning uses out-of-fold F1 rather than held-out test labels.
+## Run locally (Python 3.10+, no third-party packages required)
 
-## Synthetic smoke tests
-```bash
-python scripts/make_synthetic_data.py
-python -m secom.train --data-dir data/synthetic --output-dir results_synthetic --split stratified
-pytest -q
-```
+\`\`\`bash
+python scripts/load_secom.py --database data/secom.sqlite
+python scripts/run_analysis.py --database data/secom.sqlite --out results
+python -m unittest discover -s tests -v
+\`\`\`
 
-## Models and outputs
-Logistic regression and random forest pipelines with median imputation and appropriate imbalance handling. Outputs: `metrics.json`, `test_predictions.csv`, `model.joblib`, precision-recall curve, confusion matrix, and feature importance when available.
+By default, the loader downloads the official original UCI archive. To use an existing local copy, point \`--data-dir\` at a folder containing \`secom.data\` and \`secom_labels.data\`.
 
-**Limitations:** Small minority class; uncertain generalization; synthetic results do not constitute a real-data benchmark. Features are anonymized and their associations are not proven root causes.
+\`\`\`bash
+python scripts/load_secom.py --data-dir data/raw --database data/secom.sqlite
+\`\`\`
 
-## Attribution
-McCann, M. & Johnston, A. (2008). *SECOM*. UCI Machine Learning Repository, DOI: 10.24432/C54305. Dataset: CC BY 4.0. Code: MIT.
+Results are exported to CSV in \`results/\`; the SQLite database and raw datasets are ignored by Git. **GitHub Actions runs the same analysis on the original public data.**
+
+## Project layout
+
+\`\`\`text
+sql/01_schema.sql                  Relational tables and constraints
+sql/02_quality_kpis.sql            Overall production pass/fail metrics
+sql/03_monthly_quality.sql         Time-based quality trends with a window function
+sql/04_sensor_missingness.sql      Missing values by sensor
+sql/05_sensor_failure_comparison.sql Passed-vs-failed sensor mean differences
+scripts/load_secom.py              Reproducible data download and ETL into SQLite
+scripts/run_analysis.py            Execute queries and export CSV reports
+tests/test_sql_project.py          Self-contained ETL/SQL smoke tests
+.github/workflows/sql-analysis.yml Runs full SQL analysis on real UCI data
+\`\`\`
+
+## How to interpret the analysis
+
+Differences between sensor readings for passed and failed products are **descriptive associations**, not evidence of root causes. Anonymized sensor names prevent physical interpretation. Failure rates may vary over time; do not treat exploratory SQL comparisons as causal claims. The project does not predict whether an individual product will fail.
+
+The published report is [SQL_RESULTS.md](SQL_RESULTS.md) after the verified real-data workflow runs.
+
+## Branches
+
+- **main (this branch):** SQL manufacturing data engineering and business analysis.
+- **machine-learning:** preserved historical defect-prediction research, experiments and reports.
+
+License: MIT.
