@@ -47,6 +47,9 @@ jobs:
       - name: Run real-dataset held-out evaluation
         run: |
           python -m secom.train --data-dir data/raw --output-dir results --split chronological --cv-folds 4
+      - name: Evaluate recall-targeted alternatives on real data
+        run: |
+          python -m secom.recall_experiment --data-dir data/raw --output-dir results_recall --target-recall 0.70
       - name: Display metrics
         if: success()
         run: cat results/metrics.json
@@ -60,4 +63,6 @@ jobs:
             results/confusion_matrix.png
             results/precision_recall_curve.png
             results/feature_importances.csv
+            results_recall/recall_experiment_metrics.json
+            results_recall/*_predictions.csv
           if-no-files-found: warn
