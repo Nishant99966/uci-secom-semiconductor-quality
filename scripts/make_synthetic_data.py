@@ -20,8 +20,7 @@ def main():
     dates = pd.date_range("2008-07-19", periods=n, freq="h")
     with (root / "secom_labels.data").open("w") as f:
         for label, date in zip(y, dates):
-            f.write(f"{label} {date:%d/%m/%Y %H:%M:%S}
-")
+            f.write(f"{label} {date:%d/%m/%Y %H:%M:%S}\n")
     print(root)
 
 if __name__ == "__main__":
