@@ -50,6 +50,9 @@ jobs:
       - name: Evaluate recall-targeted alternatives on real data
         run: |
           python -m secom.recall_experiment --data-dir data/raw --output-dir results_recall --target-recall 0.70
+      - name: Run chronological blocked training-only validation
+        run: |
+          python -m secom.blocked_validation --data-dir data/raw --output-dir results_blocked --n-splits 4 --target-recall 0.70 --max-alert-rate 0.25
       - name: Display metrics
         if: success()
         run: cat results/metrics.json
@@ -65,4 +68,6 @@ jobs:
             results/feature_importances.csv
             results_recall/recall_experiment_metrics.json
             results_recall/*_predictions.csv
+            results_blocked/blocked_cv_metrics.json
+            results_blocked/blocked_cv_predictions.csv
           if-no-files-found: warn
